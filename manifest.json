@@ -1,0 +1,8 @@
+{
+  "name": "Write User Stories",
+  "id": "your-plugin-id",
+  "api": "0.0.1",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma", "figjam"]
+}
