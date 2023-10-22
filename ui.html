@@ -29,16 +29,17 @@
                 <div class="h-full overflow-auto pb-2">
                     <!-- Image Selection Container -->
                     <div class="mb-5 w-full h-48 border border-gray-200 rounded flex items-center justify-center p-2"
-                        :class="{'border-sky-400 ring-2 ring-sky-200 ring-inset': imageSource}">
-                        <img v-show="imageSource" :src="imageSource" class="object-contain h-full w-full">
+                        :class="{'border-sky-400 ring-2 ring-sky-200 ring-inset': userStoriesPage.imageResource}">
+                        <img v-show="userStoriesPage.imageResource" :src="userStoriesPage.imageResource"
+                            class="object-contain h-full w-full">
 
-                        <p v-if="! imageSource" class="text-xs text-gray-400">
-                            To start, select any Iframe or Component...
+                        <p v-if="! userStoriesPage.imageResource" class="text-xs text-gray-400">
+                            To start, select any Frame or Component...
                         </p>
                     </div>
 
                     <!-- Content -->
-                    <div v-if="true" id="user-story">
+                    <div v-if="userStoriesPage.isGenerating" id="user-story">
                         <!-- Generated Content -->
                         <div class="message pb-2">
                             <h1 class="text-sm font-medium pb-2">
@@ -92,7 +93,8 @@
                             New Story
                         </button>
                         <button @click="generateUserStory" type="button"
-                            class="rounded-md bg-sky-500 px-3 py-1.5 text-xs text-white">
+                            class="rounded-md bg-sky-500 px-3 py-1.5 text-xs text-white"
+                            :class="{'bg-gray-300': !userStoriesPage.imageResource}">
                             Generate User Story
                         </button>
                     </div>
@@ -109,16 +111,17 @@
 
                     <!-- Image Selection Container -->
                     <div class="mb-5 w-full h-48 border border-gray-200 rounded flex items-center justify-center p-2"
-                        :class="{'border-sky-400 ring-2 ring-sky-200 ring-inset': imageSource}">
-                        <img v-show="imageSource" :src="imageSource" class="object-contain h-full w-full">
+                        :class="{'border-sky-400 ring-2 ring-sky-200 ring-inset': chatWithDesignPage.imageResource}">
+                        <img v-show="chatWithDesignPage.imageResource" :src="chatWithDesignPage.imageResource"
+                            class="object-contain h-full w-full">
 
-                        <p v-if="! imageSource" class="text-xs text-gray-400">
-                            To start, select any Iframe or Component...
+                        <p v-if="! chatWithDesignPage.imageResource" class="text-xs text-gray-400">
+                            To start, select any Frame or Component...
                         </p>
                     </div>
 
                     <!-- Message -->
-                    <div v-for="(message, index) in chatWithDesignTread" class="flex items-start pb-3"
+                    <div v-for="(message, index) in chatWithDesignPage.thread" class="flex items-start pb-3"
                         v-show="index !== 0">
                         <div class="flex-shrink-0 w-8 pr-2.5">
 
@@ -149,10 +152,11 @@
                 <!-- Submit Button -->
                 <div class="mb-1 border border-gray-200 p-2 mt-2 rounded">
                     <div class="w-full mb-2">
-                        <textarea v-model="chatWithDesignUserMessage" @keyup.enter="chatWithDesign" type="password"
+                        <textarea v-model="chatWithDesignPage.query" @keyup.enter="chatWithDesign" type="password"
                             name="email" id="email"
                             class="resize-none w-full rounded text-xs text-gray-700 cursor-default placeholder:text-gray-400 outline-none resize-none"
-                            placeholder="Ask your design anything..." rows="3"></textarea>
+                            :placeholder="chatWithDesignPage.thread.length === 1 ? 'Ask your design anything...' : 'Ask follow up question...'"
+                            rows="3"></textarea>
                     </div>
                     <div class="flex justify-between">
                         <button @click="resetChatWithDesign" type="button"
@@ -160,13 +164,13 @@
                             New Chat
                         </button>
                         <div class="flex items-center space-x-4">
-                            <button v-if="isGeneratingChatWithDesign" @click="abortChatWithDesign" type="button"
+                            <button v-if="chatWithDesignPage.isGenerating" @click="abortChatWithDesign" type="button"
                                 class="rounded-md px-0.5 py-1.5 text-xs text-gray-400">
                                 Stop Generation
                             </button>
                             <button @click="chatWithDesign" type="button"
                                 class="rounded-md bg-sky-500 px-3 py-1.5 text-xs text-white"
-                                :class="{'animate-pulse': isGeneratingChatWithDesign}">
+                                :class="{'animate-pulse': chatWithDesignPage.isGenerating, 'bg-gray-300': ! chatWithDesignPage.imageResource}">
                                 Chat
                             </button>
                         </div>
@@ -204,7 +208,8 @@
     <!-- Footer -->
     <footer class="flex items-center justify-between w-full text-gray-400 p-2.5">
         <div class="flex space-x-4">
-            <a v-for="link in footerLinks" :href="link.name" class="text-xs hover:text-gray-600 cursor-pointer">
+            <a v-for="link in footerLinks" :href="link.href" target="_blank"
+                class="text-xs hover:text-gray-600 cursor-pointer">
                 {{ link.title }}
             </a>
         </div>
@@ -221,16 +226,11 @@
         createApp({
             data() {
                 return {
-                    isGeneratingChatWithDesign: false,
-                    isVisibleResponse: false,
-
                     openAIToken: undefined,
                     imageSource: undefined,
                     userAvatar: undefined,
-                    response: undefined,
 
-                    message: 'Hello!',
-                    activeTab: 'chatWithDesign',
+                    activeTab: 'userStories',
                     tabs: [
                         {
                             name: 'User Stories',
@@ -255,7 +255,7 @@
                         },
                         {
                             title: 'Buy me a Coffee',
-                            href: '',
+                            href: 'https://www.buymeacoffee.com/pepe',
                         },
                         {
                             title: 'GitHub',
@@ -263,14 +263,27 @@
                         },
                     ],
                     userStorySystemMessage: 'Here is my app I designed, please write user stories with acceptance criteria to move it to the engineering team.',
-                    chatWithDesignUserMessage: 'how are you?',
+                    userStoriesPage: {
+                        imageResource: undefined,
+                        query: undefined,
+                        isGenerating: false,
+                    },
 
-                    chatWithDesignTread: [
-                        {
-                            'role': 'system',
-                            'content': 'You are a helpful assistant.'
-                        },
-                    ]
+                    chatWithDesignPage: {
+                        imageResource: undefined,
+                        query: undefined,
+                        isGenerating: false,
+                        thread: [
+                            {
+                                'role': 'system',
+                                'content': 'You are a helpful assistant.'
+                            },
+                        ],
+                    },
+
+                    settingsPage: {
+
+                    }
                 }
             },
             methods: {
@@ -284,23 +297,33 @@
                     document.body.removeChild(textArea);
                 },
                 async generateUserStory() {
+                    if (!this.userStoriesPage.imageResource) {
+                        return
+                    }
 
+                    // Start generation
+                    this.userStoriesPage.isGenerating = true
                 },
                 resetGenerateUserStory() {
-
+                    this.userStoriesPage.isGenerating = false
+                    this.userStoriesPage.imageResource = undefined
                 },
                 async chatWithDesign() {
+                    if (!this.chatWithDesignPage.query || !this.chatWithDesignPage.imageResource) {
+                        return
+                    }
+
                     // Start generation
-                    this.isGeneratingChatWithDesign = true
+                    this.chatWithDesignPage.isGenerating = true
 
                     // Push new message into the thread
-                    this.chatWithDesignTread.push({
+                    this.chatWithDesignPage.thread.push({
                         role: 'user',
-                        content: this.chatWithDesignUserMessage
+                        content: this.chatWithDesignPage.query
                     })
 
                     // Reset textarea
-                    this.chatWithDesignUserMessage = undefined
+                    this.chatWithDesignPage.query = undefined
 
                     // Create a new AbortController instance
                     chatWithDesignController = new AbortController();
@@ -316,7 +339,7 @@
                             },
                             body: JSON.stringify({
                                 model: "gpt-3.5-turbo",
-                                messages: this.chatWithDesignTread,
+                                messages: this.chatWithDesignPage.thread,
                                 max_tokens: 100,
                                 stream: true,
                             }),
@@ -329,7 +352,7 @@
                         let responseMessage = "";
 
                         // Push response into the thread
-                        this.chatWithDesignTread.push({
+                        this.chatWithDesignPage.thread.push({
                             role: 'assistant',
                             content: ''
                         })
@@ -358,17 +381,17 @@
                                 if (content) {
                                     responseMessage += content;
 
-                                    this.chatWithDesignTread[this.chatWithDesignTread.length - 1].content = responseMessage
+                                    this.chatWithDesignPage.thread[this.chatWithDesignPage.thread.length - 1].content = responseMessage
                                 }
                             }
                         }
                     } catch (error) {
                         // Stop generation
-                        this.isGeneratingChatWithDesign = false
+                        this.chatWithDesignPage.isGenerating = false
 
                     } finally {
                         // Stop generation
-                        this.isGeneratingChatWithDesign = false
+                        this.chatWithDesignPage.isGenerating = false
 
                         // Reset the AbortController instance
                         chatWithDesignController = undefined;
@@ -379,12 +402,13 @@
                     chatWithDesignController = undefined
                 },
                 resetChatWithDesign() {
-                    this.chatWithDesignTread = [
+                    this.chatWithDesignPage.thread = [
                         {
                             'role': 'system',
                             'content': 'You are a helpful assistant.'
-                        },
+                        }
                     ]
+                    this.chatWithDesignPage.imageResource = undefined
                 },
                 handleMessage(event) {
 
@@ -392,12 +416,18 @@
                     if (event.data.pluginMessage.type === 'convert-image') {
                         const base64Image = btoa(String.fromCharCode(...new Uint8Array(event.data.pluginMessage.exportedFrame)))
 
-                        this.imageSource = `data:image/jpeg;base64,${base64Image}`
+                        if (this.activeTab === 'chatWithDesign') {
+                            this.chatWithDesignPage.imageResource = `data:image/jpeg;base64,${base64Image}`
+                        }
+
+                        if (this.activeTab === 'userStories') {
+                            this.userStoriesPage.imageResource = `data:image/jpeg;base64,${base64Image}`
+                        }
                     }
 
                     // Convert image and store the source
                     if (event.data.pluginMessage.type === 'clear-image') {
-                        this.imageSource = undefined
+                        this.chatWithDesignPage.imageResource = undefined
                     }
 
                     // Convert image and store the source
