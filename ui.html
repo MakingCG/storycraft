@@ -73,7 +73,8 @@
                             <span class="text-gray-400 text-xs hover:text-gray-700 cursor-default">
                                 Regenerate
                             </span>
-                            <span class="text-gray-400 text-xs hover:text-gray-700 cursor-default">
+                            <span @click="createLinearTask"
+                                class="text-gray-400 text-xs hover:text-gray-700 cursor-default">
                                 Push to the Linear
                             </span>
                         </div>
@@ -283,10 +284,80 @@
 
                     settingsPage: {
 
+                    },
+                    linearSetup: {
+                        token: '',
+                        url: 'https://api.linear.app/graphql',
                     }
                 }
             },
             methods: {
+                getLinearTeams() {
+                    const test = {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': this.linearSetup.token
+                        },
+                        body: JSON.stringify({
+                            query: `
+                                query Teams {
+                                    teams {
+                                        nodes {
+                                            id
+                                            name
+                                        }
+                                    }
+                                }
+                            `
+                        })
+                    };
+
+                    fetch(this.linearSetup.url, test)
+                        .then(response => response.json())
+                        .then(data => console.log(data))
+                        .catch(error => console.error('Error:', error));
+                },
+                createLinearTask() {
+                    const ticketContent = `
+                        User Story 1: Viewing Account Balance
+                        As a user, I want to view my current account balance so that I know how much money I have in my blockchain account.
+
+                        Acceptance Criteria:
+                        1. The account balance should be displayed prominently at the top.
+
+                        2. The balance should show the exact amount down to the cents.
+
+                        3. The currency symbol (€) should be clearly displayed next to the amount.
+                    `
+
+                    const options = {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': this.linearSetup.token
+                        },
+                        body: JSON.stringify({
+                            query: `
+                                mutation CreateIssue($title: String!, $description: String!, $teamId: String!) {
+                                    issueCreate(input: {title: $title, description: $description, teamId: $teamId}) {
+                                        success
+                                    }
+                                }
+                            `,
+                            variables: {
+                                title: 'Viewing Account Balance',
+                                description: ticketContent,
+                                teamId: 'c41c145a-bc95-4e0a-a672-46bcf95ce3cd',
+                            }
+                        })
+                    };
+
+                    fetch(this.linearSetup.url, options)
+                        .then(response => response.json())
+                        .then(data => console.log(data))
+                        .catch(error => console.error('Error:', error));
+                },
                 copyContent() {
                     let textArea = document.createElement("textarea")
                     textArea.value = 'Hello world'
