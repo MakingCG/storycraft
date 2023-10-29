@@ -33,7 +33,7 @@
                         <img v-show="userStoriesPage.imageResource" :src="userStoriesPage.imageResource"
                             class="object-contain h-full w-full">
 
-                        <p v-if="! userStoriesPage.imageResource" class="text-xs text-gray-400">
+                        <p v-if="! userStoriesPage.imageResource" class="text-xs text-gray-500">
                             To start, select any Frame or Component...
                         </p>
                     </div>
@@ -116,7 +116,7 @@
                         <img v-show="chatWithDesignPage.imageResource" :src="chatWithDesignPage.imageResource"
                             class="object-contain h-full w-full">
 
-                        <p v-if="! chatWithDesignPage.imageResource" class="text-xs text-gray-400">
+                        <p v-if="! chatWithDesignPage.imageResource" class="text-xs text-gray-500">
                             To start, select any Frame or Component...
                         </p>
                     </div>
@@ -147,6 +147,22 @@
                                 {{ message.content }}
                             </p>
                         </div>
+                    </div>
+                </div>
+
+                <div v-if="chatWithDesignPage.thread.length <= 1">
+                    <b class="font-medium text-sm mb-3 block">
+                        Suggestions
+                    </b>
+
+                    <div @click="runSuggestion(suggestion)" v-for="suggestion in chatWithDesignPage.suggestions"
+                        class="w-full bg-gray-50 hover:bg-gray-100 rounded p-3 mb-3">
+                        <b class="font-medium text-xs block pb-1 text-gray-900">
+                            {{ suggestion.title }}
+                        </b>
+                        <small class="text-xs text-gray-500">
+                            {{ suggestion.description }}
+                        </small>
                     </div>
                 </div>
 
@@ -231,7 +247,7 @@
                     imageSource: undefined,
                     userAvatar: undefined,
 
-                    activeTab: 'userStories',
+                    activeTab: 'chatWithDesign',
                     tabs: [
                         {
                             name: 'User Stories',
@@ -241,12 +257,12 @@
                         {
                             name: 'Chat With Design',
                             href: 'chatWithDesign',
-                            current: false
+                            current: true
                         },
                         {
                             name: 'Settings',
                             href: 'settings',
-                            current: true
+                            current: false
                         },
                     ],
                     footerLinks: [
@@ -260,7 +276,7 @@
                         },
                         {
                             title: 'GitHub',
-                            href: '',
+                            href: 'https://github.com/MakingCG/figma-gpt4vision',
                         },
                     ],
                     userStorySystemMessage: 'Here is my app I designed, please write user stories with acceptance criteria to move it to the engineering team.',
@@ -280,6 +296,23 @@
                                 'content': 'You are a helpful assistant.'
                             },
                         ],
+                        suggestions: [
+                            {
+                                title: 'Critique your design',
+                                description: 'Challenge your design and improve it.',
+                                prompt: 'Challenge your design and improve it',
+                            },
+                            {
+                                title: 'Get suggestions to improve your design',
+                                description: 'It gives you advice how you can improve your design.',
+                                prompt: 'It gives you advice how you can improve your design',
+                            },
+                            {
+                                title: 'User Testing',
+                                description: 'Test if average user can understand your design.',
+                                prompt: 'Test if average user can understand your design',
+                            },
+                        ]
                     },
 
                     settingsPage: {
@@ -378,6 +411,16 @@
                 resetGenerateUserStory() {
                     this.userStoriesPage.isGenerating = false
                     this.userStoriesPage.imageResource = undefined
+                },
+                runSuggestion(suggestion) {
+                    if (!this.chatWithDesignPage.imageResource) {
+                        return
+                    }
+
+                    this.chatWithDesignPage.query = suggestion.prompt
+
+                    this.chatWithDesign()
+
                 },
                 async chatWithDesign() {
                     if (!this.chatWithDesignPage.query || !this.chatWithDesignPage.imageResource) {
