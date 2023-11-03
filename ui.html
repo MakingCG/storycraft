@@ -186,7 +186,7 @@
                 </div>
 
                 <div v-if="chatWithDesignPage.thread.length <= 1">
-                    <b class="font-medium text-sm mb-3 block">
+                    <b class="font-medium text-xs mb-3 block">
                         Suggestions
                     </b>
 
@@ -243,7 +243,7 @@
                         placeholder="Paste your API token here" />
                 </div>
             </div>
-            <div class="mb-6">
+            <div v-if="false" class="mb-6">
                 <label for="email" class="block text-xs leading-6 text-gray-900 whitespace-nowrap mb-1.5">
                     System Prompt for User Stories
                 </label>
@@ -292,7 +292,7 @@
                     openAIToken: undefined,
                     imageSource: undefined,
                     userAvatar: undefined,
-                    activeTab: 'userStories',
+                    activeTab: 'settings',
                     tabs: [
                         {
                             name: 'User Stories',
