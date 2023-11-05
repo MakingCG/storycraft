@@ -102,7 +102,7 @@
                 <!-- Submit Button -->
                 <div class="mb-1 border border-gray-200 p-2 mt-2 rounded">
                     <div class="w-full mb-2">
-                        <textarea type="password" name="email" id="email"
+                        <textarea v-model="userStoriesPage.query" type="password" name="email" id="email"
                             class="resize-none w-full rounded text-xs text-gray-700 cursor-default placeholder:text-gray-400 outline-none resize-none"
                             placeholder="Write additional context if needed..." rows="3"></textarea>
                     </div>
@@ -251,7 +251,7 @@
                     <textarea type="password" name="email" id="email"
                         class="block w-full rounded text-xs py-1.5 px-2 text-gray-700 cursor-default border border-gray-300 placeholder:text-gray-400 focus:ring-2 ring-inset focus:ring-sky-500 focus:border-sky-500 outline-none"
                         placeholder="Write your custom prompt for user stories"
-                        rows="6">{{ userStorySystemMessage }}</textarea>
+                        rows="6">userStorySystemMessage</textarea>
                 </div>
             </div>
         </div>
@@ -274,6 +274,7 @@
         const { createApp, ref } = Vue
 
         let chatWithDesignController = null;
+        let generateUserStoryController = null;
 
         const SetUpOpenAIKey = {
             template: ``
@@ -292,7 +293,7 @@
                     openAIToken: undefined,
                     imageSource: undefined,
                     userAvatar: undefined,
-                    activeTab: 'settings',
+                    activeTab: 'userStories',
                     tabs: [
                         {
                             name: 'User Stories',
@@ -324,11 +325,16 @@
                             href: 'https://github.com/MakingCG/figma-gpt4vision',
                         },
                     ],
-                    userStorySystemMessage: 'Here is my app I designed, please write user stories with acceptance criteria to move it to the engineering team.',
                     userStoriesPage: {
                         imageResource: undefined,
                         query: undefined,
                         isGenerating: false,
+                        thread: [
+                            {
+                                'role': 'system',
+                                'content': 'You are a helpful assistant. Here is my app I designed, please write user stories with acceptance criteria to move it to the engineering team.'
+                            },
+                        ],
                     },
                     chatWithDesignPage: {
                         imageResource: undefined,
@@ -453,6 +459,89 @@
 
                     // Start generation
                     this.userStoriesPage.isGenerating = true
+
+                    console.log(this.userStoriesPage.query)
+
+                    // Push new message into the thread
+                    this.userStoriesPage.thread.push({
+                        role: 'user',
+                        content: this.userStoriesPage.query
+                    })
+
+                    // Reset textarea
+                    // this.userStoriesPage.query = undefined
+
+                    // Create a new AbortController instance
+                    generateUserStoryController = new AbortController();
+                    const signal = generateUserStoryController.signal;
+
+                    try {
+                        // Fetch the response from the OpenAI API with the signal from AbortController
+                        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${this.openAIToken}`,
+                            },
+                            body: JSON.stringify({
+                                model: "gpt-3.5-turbo",
+                                messages: this.userStoriesPage.thread,
+                                max_tokens: 100,
+                                stream: true,
+                            }),
+                            signal,
+                        });
+
+                        // Read the response as a stream of data
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder("utf-8");
+                        let responseMessage = "";
+
+                        // Push response into the thread
+                        this.userStoriesPage.thread.push({
+                            role: 'assistant',
+                            content: ''
+                        })
+
+                        while (true) {
+                            const { done, value } = await reader.read();
+
+                            if (done) {
+                                break;
+                            }
+
+                            // Massage and parse the chunk of data
+                            const chunk = decoder.decode(value);
+                            const lines = chunk.split("\n");
+                            const parsedLines = lines
+                                .map((line) => line.replace(/^data: /, "").trim()) // Remove the "data: " prefix
+                                .filter((line) => line !== "" && line !== "[DONE]") // Remove empty lines and "[DONE]"
+                                .map((line) => JSON.parse(line)); // Parse the JSON string
+
+                            for (const parsedLine of parsedLines) {
+                                const { choices } = parsedLine;
+                                const { delta } = choices[0];
+                                const { content } = delta;
+
+                                // Update the UI with the new content
+                                if (content) {
+                                    responseMessage += content;
+
+                                    this.userStoriesPage.thread[this.userStoriesPage.thread.length - 1].content = responseMessage
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        // Stop generation
+                        this.userStoriesPage.isGenerating = false
+
+                    } finally {
+                        // Stop generation
+                        this.userStoriesPage.isGenerating = false
+
+                        // Reset the AbortController instance
+                        generateUserStoryController = undefined;
+                    }
                 },
                 resetGenerateUserStory() {
                     this.userStoriesPage.isGenerating = false
