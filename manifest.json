@@ -1,5 +1,5 @@
 {
-  "name": "StoryCraft - Figma-to-User Story Converter",
+  "name": "StoryCraft - Design to User Story Converter",
   "id": "your-plugin-id",
   "api": "1.0.0",
   "main": "code.js",

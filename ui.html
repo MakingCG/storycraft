@@ -238,7 +238,7 @@
                     OpenAI API Token
                 </label>
                 <div class="w-52">
-                    <input @input="storeOpenAIToken" v-model="openAIToken" type="password" name="email" id="email"
+                    <input @input="storeOpenAIToken" v-model="settingsPage.openAIToken" type="password" name="email" id="email"
                         class="block w-full rounded text-xs py-1.5 px-2 text-gray-700 cursor-default border border-gray-300 placeholder:text-gray-400 focus:ring-2 ring-inset focus:ring-sky-500 focus:border-sky-500 outline-none"
                         placeholder="Paste your API token here" />
                 </div>
@@ -266,7 +266,9 @@
             </a>
         </div>
         <div>
-            <span class="text-xs block">v0.1</span>
+            <span class="text-xs block">
+                {{ version }}
+            </span>
         </div>
     </footer>
 
@@ -276,45 +278,37 @@
         let chatWithDesignController = null;
         let generateUserStoryController = null;
 
-        const SetUpOpenAIKey = {
-            template: ``
-        }
-
         const app = Vue.createApp({
             computed: {
                 isOpenAIInstalled() {
                     const regex = /^[a-zA-Z0-9]{2}-[a-zA-Z0-9]{48}$/;
 
-                    return regex.test(this.openAIToken)
+                    return regex.test(this.settingsPage.openAIToken)
                 }
             },
             data() {
                 return {
-                    openAIToken: undefined,
-                    imageSource: undefined,
+                    version: "v1.0.0",
                     userAvatar: undefined,
                     activeTab: 'userStories',
                     tabs: [
                         {
                             name: 'User Stories',
                             href: 'userStories',
-                            current: false
                         },
                         {
                             name: 'Chat With Design',
                             href: 'chatWithDesign',
-                            current: true
                         },
                         {
                             name: 'Settings',
                             href: 'settings',
-                            current: false
                         },
                     ],
                     footerLinks: [
                         {
                             title: 'Write a Feedback',
-                            href: '',
+                            href: 'https://forms.gle/wNUtRjQY7QnDFWCY9',
                         },
                         {
                             title: 'Buy me a Coffee',
@@ -322,7 +316,7 @@
                         },
                         {
                             title: 'GitHub',
-                            href: 'https://github.com/MakingCG/figma-gpt4vision',
+                            href: 'https://github.com/MakingCG/storycraft',
                         },
                     ],
                     userStoriesPage: {
@@ -332,7 +326,7 @@
                         thread: [
                             {
                                 'role': 'system',
-                                'content': 'You are a helpful assistant. Here is my app I designed, please write user stories with acceptance criteria to move it to the engineering team.'
+                                'content': 'You are a professional UI & UX helpful assistant. Here is my app I designed, please write user stories with acceptance criteria to move it to the engineering team.'
                             },
                         ],
                     },
@@ -343,29 +337,29 @@
                         thread: [
                             {
                                 'role': 'system',
-                                'content': 'You are a helpful assistant.'
+                                'content': 'You are a professional UI & UX helpful assistant.'
                             },
                         ],
                         suggestions: [
                             {
                                 title: 'Critique your design',
                                 description: 'Challenge your design and improve it.',
-                                prompt: 'Challenge your design and improve it',
+                                prompt: 'Please analyze the provided design input of a web/mobile app design from Figma. Focus on the design elements such as layout, color scheme, typography, and usability. Provide a detailed critique with suggestions for improvement on each of these points. Your feedback should help enhance the design effectiveness and user experience.',
                             },
                             {
                                 title: 'Get suggestions to improve your design',
                                 description: 'It gives you advice how you can improve your design.',
-                                prompt: 'It gives you advice how you can improve your design',
+                                prompt: 'Provide professional recommendations to enhance the usability and aesthetic appeal of the attached web/mobile app design screenshot from Figma. Evaluate the following design elements and suggest improvements where necessary. Provide a summary of potential areas for improvement and creative ideas that could be implemented to refine the design.',
                             },
                             {
                                 title: 'User Testing',
                                 description: 'Test if average user can understand your design.',
-                                prompt: 'Test if average user can understand your design',
+                                prompt: 'Conduct a simulated user interview to gather insights on the design, usability, and functionality of the app as perceived by a basic user. Start with describing what you see and how you understand with intention of design.',
                             },
                         ]
                     },
                     settingsPage: {
-
+                        openAIToken: undefined,
                     },
                     linearSetup: {
                         token: '',
@@ -481,7 +475,7 @@
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
-                                Authorization: `Bearer ${this.openAIToken}`,
+                                Authorization: `Bearer ${this.settingsPage.openAIToken}`,
                             },
                             body: JSON.stringify({
                                 model: "gpt-3.5-turbo",
@@ -584,7 +578,7 @@
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
-                                Authorization: `Bearer ${this.openAIToken}`,
+                                Authorization: `Bearer ${this.settingsPage.openAIToken}`,
                             },
                             body: JSON.stringify({
                                 model: "gpt-3.5-turbo",
@@ -686,14 +680,14 @@
 
                     // Set OpenAI token
                     if (event.data.pluginMessage.type === 'get-openai-token') {
-                        this.openAIToken = event.data.pluginMessage.openAIToken
+                        this.settingsPage.openAIToken = event.data.pluginMessage.openAIToken
                     }
                 },
                 storeOpenAIToken() {
                     parent.postMessage({
                         pluginMessage: {
                             type: 'set-openai-token',
-                            data: this.openAIToken
+                            data: this.settingsPage.openAIToken
                         }
                     }, '*')
                 }
@@ -702,8 +696,6 @@
                 window.addEventListener('message', this.handleMessage);
             },
         })
-
-        //app.component('setup-openai-key', SetUpOpenAIKey)
 
         app.mount('#app')
     </script>
