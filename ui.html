@@ -3,8 +3,18 @@
 
 <head>
     <title>Write User Stories - PoC</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/snarkdown/2.0.0/snarkdown.umd.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src=" https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <style>
+        ul,
+        ol {
+            display: block;
+            padding-top: 5px !important;
+            padding-bottom: 10px !important;
+        }
+    </style>
 </head>
 
 <body id="app" class="flex h-screen overflow-hidden flex-1 flex-col">
@@ -57,46 +67,35 @@
                     </div>
 
                     <!-- Content -->
-                    <div v-if="userStoriesPage.isGenerating" id="user-story">
+                    <div v-if="userStoriesPage.userStoryResult" id="user-story">
                         <!-- Generated Content -->
-                        <div class="message pb-2">
-                            <h1 class="text-sm font-medium pb-2">
-                                User Story 1: Viewing Account Balance
-                            </h1>
-                            <p class="text-xs text-gray-700 pb-3">
-                                As a user, I want to view my current account balance so that I know how much money I
-                                have in
-                                my
-                                blockchain account.
-                            </p>
-                            <b class="text-sm font-medium pb-2 block">
-                                Acceptance Criteria:
-                            </b>
-                            <p class="text-xs text-gray-700 pb-1">
-                                1. The account balance should be displayed prominently at the top.
-                            </p>
-                            <p class="text-xs text-gray-700 pb-1">
-                                2. The balance should show the exact amount down to the cents.
-                            </p>
-                            <p class="text-xs text-gray-700 pb-1">
-                                3. The currency symbol (€) should be clearly displayed next to the amount.
-                            </p>
-                        </div>
+                        <div class="message pb-2 text-sm leading-6" v-html="userStoriesPage.userStoryResult"
+                            ref="userStoryContent"></div>
 
                         <!-- Helpers -->
                         <div class="helpers flex space-x-4 pb-4">
                             <span @click="copyContent" class="text-gray-400 text-xs hover:text-gray-700 cursor-default">
                                 Copy
                             </span>
-                            <span class="text-gray-400 text-xs hover:text-gray-700 cursor-default">
+                            <span v-if="false" class="text-gray-400 text-xs hover:text-gray-700 cursor-default">
                                 Regenerate
                             </span>
-                            <span @click="createLinearTask"
+                            <span v-if="false" @click="createLinearTask"
                                 class="text-gray-400 text-xs hover:text-gray-700 cursor-default">
                                 Push to the Linear
                             </span>
                         </div>
                     </div>
+                </div>
+
+                <!-- Error alert -->
+                <div v-if="userStoriesPage.errorMessage" class="rounded bg-red-50 p-3.5 space-y-3 flex-1 text-center">
+                    <b class="text-xs block text-red-900">
+                        Ups, something went wrong!
+                    </b>
+                    <p class="text-xs">
+                        {{ userStoriesPage.errorMessage }}
+                    </p>
                 </div>
 
                 <!-- Submit Button -->
@@ -113,7 +112,7 @@
                         </button>
                         <button @click="generateUserStory" type="button"
                             class="rounded-md bg-sky-500 px-3 py-1.5 text-xs text-white"
-                            :class="{'bg-gray-300': !userStoriesPage.imageResource}">
+                            :class="{'bg-gray-300': !userStoriesPage.imageResource || userStoriesPage.isGenerating}">
                             Generate User Story
                         </button>
                     </div>
@@ -158,7 +157,7 @@
 
                     <!-- Message -->
                     <div v-for="(message, index) in chatWithDesignPage.thread" class="flex items-start pb-3"
-                        v-show="index !== 0">
+                        v-show="chatWithDesignPage.thread.length !== 0">
                         <div class="flex-shrink-0 w-8 pr-2.5">
 
                             <!-- User Avatar -->
@@ -178,14 +177,13 @@
                             <b class="text-xs font-medium pb-1 block">
                                 {{ message.role === 'user' ? 'You' : 'ChatGPT' }}
                             </b>
-                            <p class="text-xs text-gray-700 pb-1">
-                                {{ message.content }}
-                            </p>
+                            <div class="text-xs text-gray-700 pb-1" v-html="message.content[0].text">
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div v-if="chatWithDesignPage.thread.length <= 1">
+                <div v-if="chatWithDesignPage.thread.length === 0">
                     <b class="font-medium text-xs mb-3 block">
                         Suggestions
                     </b>
@@ -199,6 +197,17 @@
                             {{ suggestion.description }}
                         </small>
                     </div>
+                </div>
+
+                <!-- Error alert -->
+                <div v-if="chatWithDesignPage.errorMessage"
+                    class="rounded bg-red-50 p-3.5 space-y-3 flex-1 text-center">
+                    <b class="text-xs block text-red-900">
+                        Ups, something went wrong!
+                    </b>
+                    <p class="text-xs">
+                        {{ chatWithDesignPage.errorMessage }}
+                    </p>
                 </div>
 
                 <!-- Submit Button -->
@@ -238,7 +247,8 @@
                     OpenAI API Token
                 </label>
                 <div class="w-52">
-                    <input @input="storeOpenAIToken" v-model="settingsPage.openAIToken" type="password" name="email" id="email"
+                    <input @input="storeOpenAIToken" v-model="settingsPage.openAIToken" type="password" name="email"
+                        id="email"
                         class="block w-full rounded text-xs py-1.5 px-2 text-gray-700 cursor-default border border-gray-300 placeholder:text-gray-400 focus:ring-2 ring-inset focus:ring-sky-500 focus:border-sky-500 outline-none"
                         placeholder="Paste your API token here" />
                 </div>
@@ -288,9 +298,9 @@
             },
             data() {
                 return {
-                    version: "v1.0.0",
+                    version: "v1.0.0-beta",
                     userAvatar: undefined,
-                    activeTab: 'userStories',
+                    activeTab: 'chatWithDesign',
                     tabs: [
                         {
                             name: 'User Stories',
@@ -320,26 +330,19 @@
                         },
                     ],
                     userStoriesPage: {
+                        userStoryResult: '',
                         imageResource: undefined,
                         query: undefined,
                         isGenerating: false,
-                        thread: [
-                            {
-                                'role': 'system',
-                                'content': 'You are a professional UI & UX helpful assistant. Here is my app I designed, please write user stories with acceptance criteria to move it to the engineering team.'
-                            },
-                        ],
+                        errorMessage: undefined,
+                        thread: [],
                     },
                     chatWithDesignPage: {
                         imageResource: undefined,
                         query: undefined,
                         isGenerating: false,
-                        thread: [
-                            {
-                                'role': 'system',
-                                'content': 'You are a professional UI & UX helpful assistant.'
-                            },
-                        ],
+                        errorMessage: undefined,
+                        thread: [],
                         suggestions: [
                             {
                                 title: 'Critique your design',
@@ -439,7 +442,7 @@
                 },
                 copyContent() {
                     let textArea = document.createElement("textarea")
-                    textArea.value = 'Hello world'
+                    textArea.value = this.$refs.userStoryContent.innerText
 
                     document.body.appendChild(textArea)
                     textArea.select();
@@ -451,10 +454,10 @@
                         return
                     }
 
+                    this.userStoriesPage.errorMessage = undefined
+
                     // Start generation
                     this.userStoriesPage.isGenerating = true
-
-                    console.log(this.userStoriesPage.query)
 
                     // Push new message into the thread
                     this.userStoriesPage.thread.push({
@@ -462,15 +465,13 @@
                         content: this.userStoriesPage.query
                     })
 
-                    // Reset textarea
-                    // this.userStoriesPage.query = undefined
-
                     // Create a new AbortController instance
                     generateUserStoryController = new AbortController();
                     const signal = generateUserStoryController.signal;
 
                     try {
                         // Fetch the response from the OpenAI API with the signal from AbortController
+                        // messages: this.userStoriesPage.thread,
                         const response = await fetch('https://api.openai.com/v1/chat/completions', {
                             method: "POST",
                             headers: {
@@ -478,9 +479,25 @@
                                 Authorization: `Bearer ${this.settingsPage.openAIToken}`,
                             },
                             body: JSON.stringify({
-                                model: "gpt-3.5-turbo",
-                                messages: this.userStoriesPage.thread,
-                                max_tokens: 100,
+                                model: "gpt-4-vision-preview",
+                                max_tokens: 1000,
+                                messages: [
+                                    {
+                                        role: 'user',
+                                        content: [
+                                            {
+                                                type: 'text',
+                                                text: `You are a professional UI & UX helpful assistant. Here is my app I designed. ${this.userStoriesPage.query} please write user stories with acceptance criteria to move it to the engineering team. Please provide response in a plain text formatted with html but use only <p> tag.`
+                                            },
+                                            {
+                                                type: 'image_url',
+                                                image_url: {
+                                                    url: this.userStoriesPage.imageResource
+                                                },
+                                            },
+                                        ]
+                                    }
+                                ],
                                 stream: true,
                             }),
                             signal,
@@ -521,13 +538,16 @@
                                 if (content) {
                                     responseMessage += content;
 
-                                    this.userStoriesPage.thread[this.userStoriesPage.thread.length - 1].content = responseMessage
+                                    this.userStoriesPage.userStoryResult = snarkdown(responseMessage)
                                 }
                             }
                         }
                     } catch (error) {
                         // Stop generation
                         this.userStoriesPage.isGenerating = false
+
+                        // Log the error and set the error message
+                        this.userStoriesPage.errorMessage = error.message
 
                     } finally {
                         // Stop generation
@@ -540,6 +560,9 @@
                 resetGenerateUserStory() {
                     this.userStoriesPage.isGenerating = false
                     this.userStoriesPage.imageResource = undefined
+                    this.userStoriesPage.userStoryResult = undefined
+                    this.userStoriesPage.query = undefined
+                    this.userStoriesPage.errorMessage = undefined
                 },
                 runSuggestion(suggestion) {
                     if (!this.chatWithDesignPage.imageResource) {
@@ -548,22 +571,45 @@
 
                     this.chatWithDesignPage.query = suggestion.prompt
 
-                    this.chatWithDesign()
-
+                    setTimeout(() => this.chatWithDesign(), 1)
                 },
                 async chatWithDesign() {
                     if (!this.chatWithDesignPage.query || !this.chatWithDesignPage.imageResource) {
                         return
                     }
 
+                    if (this.chatWithDesignPage.thread.length === 0) {
+                        this.chatWithDesignPage.thread = [
+                            {
+                                role: 'user',
+                                content: [
+                                    {
+                                        type: 'text',
+                                        text: `You are a professional UI & UX helpful assistant. ${this.chatWithDesignPage.query}`
+                                    },
+                                    {
+                                        type: 'image_url',
+                                        image_url: {
+                                            url: this.chatWithDesignPage.imageResource
+                                        },
+                                    },
+                                ]
+                            }
+                        ]
+                    } else {
+                        this.chatWithDesignPage.thread.push({
+                            role: 'user',
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: this.chatWithDesignPage.query
+                                },
+                            ]
+                        })
+                    }
+
                     // Start generation
                     this.chatWithDesignPage.isGenerating = true
-
-                    // Push new message into the thread
-                    this.chatWithDesignPage.thread.push({
-                        role: 'user',
-                        content: this.chatWithDesignPage.query
-                    })
 
                     // Reset textarea
                     this.chatWithDesignPage.query = undefined
@@ -581,9 +627,9 @@
                                 Authorization: `Bearer ${this.settingsPage.openAIToken}`,
                             },
                             body: JSON.stringify({
-                                model: "gpt-3.5-turbo",
+                                model: "gpt-4-vision-preview",
+                                max_tokens: 1000,
                                 messages: this.chatWithDesignPage.thread,
-                                max_tokens: 100,
                                 stream: true,
                             }),
                             signal,
@@ -597,7 +643,12 @@
                         // Push response into the thread
                         this.chatWithDesignPage.thread.push({
                             role: 'assistant',
-                            content: ''
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: ''
+                                },
+                            ]
                         })
 
                         while (true) {
@@ -624,7 +675,7 @@
                                 if (content) {
                                     responseMessage += content;
 
-                                    this.chatWithDesignPage.thread[this.chatWithDesignPage.thread.length - 1].content = responseMessage
+                                    this.chatWithDesignPage.thread[this.chatWithDesignPage.thread.length - 1].content[0].text = snarkdown(responseMessage)
                                 }
                             }
                         }
@@ -632,6 +683,8 @@
                         // Stop generation
                         this.chatWithDesignPage.isGenerating = false
 
+                        // Log the error and set the error message
+                        this.chatWithDesignPage.errorMessage = error.message
                     } finally {
                         // Stop generation
                         this.chatWithDesignPage.isGenerating = false
@@ -645,13 +698,11 @@
                     chatWithDesignController = undefined
                 },
                 resetChatWithDesign() {
-                    this.chatWithDesignPage.thread = [
-                        {
-                            'role': 'system',
-                            'content': 'You are a helpful assistant.'
-                        }
-                    ]
-                    this.chatWithDesignPage.imageResource = undefined
+                    this.chatWithDesignPage.thread = []
+                    this.userStoriesPage.isGenerating = false
+                    this.userStoriesPage.imageResource = undefined
+                    this.userStoriesPage.query = undefined
+                    this.userStoriesPage.errorMessage = undefined
                 },
                 handleMessage(event) {
 
