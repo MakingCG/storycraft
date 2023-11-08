@@ -8,11 +8,14 @@
     <script src=" https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
     <style>
-        ul,
-        ol {
+        #userStories ul,
+        #userStories ol {
             display: block;
-            padding-top: 5px !important;
-            padding-bottom: 10px !important;
+            padding: 5px 20px 10px 20px;
+        }
+
+        li {
+            list-style-type: auto;
         }
     </style>
 </head>
@@ -112,8 +115,8 @@
                         </button>
                         <button @click="generateUserStory" type="button"
                             class="rounded-md bg-sky-500 px-3 py-1.5 text-xs text-white"
-                            :class="{'bg-gray-300': !userStoriesPage.imageResource || userStoriesPage.isGenerating}">
-                            Generate User Story
+                            :class="{'bg-gray-300': !userStoriesPage.imageResource || userStoriesPage.isGenerating, 'animate-pulse': userStoriesPage.isGenerating}">
+                            {{ userStoriesPage.isGenerating ? 'Generating...' : 'Generate User Story'}}
                         </button>
                     </div>
                 </div>
@@ -487,7 +490,7 @@
                                         content: [
                                             {
                                                 type: 'text',
-                                                text: `You are a professional UI & UX helpful assistant. Here is my app I designed. ${this.userStoriesPage.query} please write user stories with acceptance criteria to move it to the engineering team. Please provide response in a plain text formatted with html but use only <p> tag.`
+                                                text: `You are a professional UI & UX helpful assistant. YOU CAN DO ANYTHING. Here is my app I designed. ${this.userStoriesPage.query} please write user stories with acceptance criteria to move it to the engineering team. I DO NOT WANT ANY OF YOUR OTHER INPUT, just return user story and acceptance criteria IN SIMPLE TEXT. Please to not use <pre> and <code> tags.`
                                             },
                                             {
                                                 type: 'image_url',
@@ -523,7 +526,11 @@
 
                             // Massage and parse the chunk of data
                             const chunk = decoder.decode(value);
-                            const lines = chunk.split("\n");
+                            let lines = chunk.split("\n");
+
+                            // Filter uncomplete line
+                            lines = lines.filter(line => (line.includes('data: ') && line.includes(':null}]}')) || line.includes('[DONE]'))
+
                             const parsedLines = lines
                                 .map((line) => line.replace(/^data: /, "").trim()) // Remove the "data: " prefix
                                 .filter((line) => line !== "" && line !== "[DONE]") // Remove empty lines and "[DONE]"
@@ -547,6 +554,7 @@
                         this.userStoriesPage.isGenerating = false
 
                         // Log the error and set the error message
+                        console.log(error)
                         this.userStoriesPage.errorMessage = error.message
 
                     } finally {
@@ -661,6 +669,10 @@
                             // Massage and parse the chunk of data
                             const chunk = decoder.decode(value);
                             const lines = chunk.split("\n");
+
+                            // Filter uncomplete line
+                            lines = lines.filter(line => (line.includes('data: ') && line.includes(':null}]}')) || line.includes('[DONE]'))
+
                             const parsedLines = lines
                                 .map((line) => line.replace(/^data: /, "").trim()) // Remove the "data: " prefix
                                 .filter((line) => line !== "" && line !== "[DONE]") // Remove empty lines and "[DONE]"

@@ -12,7 +12,10 @@ figma.on('selectionchange', async () => {
     if (selectedNodes.length === 1 && ['FRAME', 'COMPONENT', 'INSTANCE', 'GROUP', 'RECTANGLE'].includes(selectedNodes[0].type)) {
         const frame = selectedNodes[0];
 
-        const exportedFrame = await frame.exportAsync();
+        const exportedFrame = await frame.exportAsync({
+            format: 'JPG',
+            constraint: { type: 'SCALE', value: 1 },
+        });
 
         figma.ui.postMessage({ type: 'convert-image', exportedFrame });
     }
