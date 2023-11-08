@@ -10,5 +10,12 @@
   ],
   "permissions": [
     "currentuser"
-  ]
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "*"
+    ],
+    "reasoning": "MyPlugin queries OpenAI API",
+    "devAllowedDomains": []
+  }
 }
