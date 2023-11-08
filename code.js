@@ -12,12 +12,30 @@ figma.on('selectionchange', async () => {
     if (selectedNodes.length === 1 && ['FRAME', 'COMPONENT', 'INSTANCE', 'GROUP', 'RECTANGLE'].includes(selectedNodes[0].type)) {
         const frame = selectedNodes[0];
 
-        const exportedFrame = await frame.exportAsync({
+        let exportedFrame = await frame.exportAsync({
             format: 'JPG',
-            constraint: { type: 'SCALE', value: 1 },
+            constraint: {
+                type: 'SCALE',
+                value: 1
+            },
         });
 
-        figma.ui.postMessage({ type: 'convert-image', exportedFrame });
+        // Split the exportedFrame array into chunks of 10000 items each
+        let chunks = [];
+
+        for (let i = 0; i < exportedFrame.length; i += 10000) {
+            chunks.push(exportedFrame.slice(i, i + 10000));
+        }
+
+        // Send each chunk separately
+        for (let i = 0; i < chunks.length; i++) {
+            figma.ui.postMessage({
+                type: 'convert-image',
+                chunk: chunks[i],
+                index: i + 1,
+                totalChunks: chunks.length
+            });
+        }
     }
 });
 

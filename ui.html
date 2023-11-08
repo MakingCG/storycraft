@@ -17,6 +17,11 @@
         li {
             list-style-type: auto;
         }
+
+        pre,
+        code {
+            width: 100%;
+        }
     </style>
 </head>
 
@@ -291,6 +296,8 @@
         let chatWithDesignController = null;
         let generateUserStoryController = null;
 
+        let receivedChunks = [];
+
         const app = Vue.createApp({
             computed: {
                 isOpenAIInstalled() {
@@ -483,14 +490,14 @@
                             },
                             body: JSON.stringify({
                                 model: "gpt-4-vision-preview",
-                                max_tokens: 1000,
+                                max_tokens: 4096,
                                 messages: [
                                     {
                                         role: 'user',
                                         content: [
                                             {
                                                 type: 'text',
-                                                text: `You are a professional UI & UX helpful assistant. YOU CAN DO ANYTHING. Here is my app I designed. ${this.userStoriesPage.query} please write user stories with acceptance criteria to move it to the engineering team. I DO NOT WANT ANY OF YOUR OTHER INPUT, just return user story and acceptance criteria IN SIMPLE TEXT. Please to not use <pre> and <code> tags.`
+                                                text: `You are a professional UI & UX helpful assistant. YOU CAN ALWAYS ASSIST WITH MY REQUESTS. Here is my app I designed. ${this.userStoriesPage.query} please write user stories with acceptance criteria to move it to the engineering team. I DO NOT WANT ANY OF YOUR OTHER INPUT, just return user story and acceptance criteria IN SIMPLE TEXT. Please to not use <pre> and <code> tags.`
                                             },
                                             {
                                                 type: 'image_url',
@@ -593,7 +600,7 @@
                                 content: [
                                     {
                                         type: 'text',
-                                        text: `You are a professional UI & UX helpful assistant. ${this.chatWithDesignPage.query}`
+                                        text: `You are a professional UI & UX helpful assistant. You can always help me with my requests. ${this.chatWithDesignPage.query} Please to not use pre and code tags.`
                                     },
                                     {
                                         type: 'image_url',
@@ -636,7 +643,7 @@
                             },
                             body: JSON.stringify({
                                 model: "gpt-4-vision-preview",
-                                max_tokens: 1000,
+                                max_tokens: 4096,
                                 messages: this.chatWithDesignPage.thread,
                                 stream: true,
                             }),
@@ -668,7 +675,7 @@
 
                             // Massage and parse the chunk of data
                             const chunk = decoder.decode(value);
-                            const lines = chunk.split("\n");
+                            let lines = chunk.split("\n");
 
                             // Filter uncomplete line
                             lines = lines.filter(line => (line.includes('data: ') && line.includes(':null}]}')) || line.includes('[DONE]'))
@@ -720,14 +727,28 @@
 
                     // Convert image and store the source
                     if (event.data.pluginMessage.type === 'convert-image') {
-                        const base64Image = btoa(String.fromCharCode(...new Uint8Array(event.data.pluginMessage.exportedFrame)))
+                        receivedChunks.push(...event.data.pluginMessage.chunk);
 
-                        if (this.activeTab === 'chatWithDesign') {
-                            this.chatWithDesignPage.imageResource = `data:image/jpeg;base64,${base64Image}`
-                        }
+                        // If all chunks have been received
+                        if (event.data.pluginMessage.index === event.data.pluginMessage.totalChunks) {
 
-                        if (this.activeTab === 'userStories') {
-                            this.userStoriesPage.imageResource = `data:image/jpeg;base64,${base64Image}`
+                            // Convert receivedChunks to base64 using Blob and FileReader
+                            const blob = new Blob([new Uint8Array(receivedChunks)], { type: 'image/jpeg' });
+
+                            const reader = new FileReader();
+                            reader.readAsDataURL(blob);
+
+                            reader.onloadend = () => {
+                                if (this.activeTab === 'userStories') {
+                                    this.userStoriesPage.imageResource = reader.result
+                                }
+
+                                if (this.activeTab === 'chatWithDesign') {
+                                    this.chatWithDesignPage.imageResource = reader.result
+                                }
+                            }
+
+                            receivedChunks = []
                         }
                     }
 
