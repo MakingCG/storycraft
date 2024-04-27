@@ -9,7 +9,7 @@ figma.on('selectionchange', async () => {
         figma.ui.postMessage({ type: 'clear-image' });
     }
 
-    if (selectedNodes.length === 1 && ['FRAME', 'COMPONENT', 'INSTANCE', 'GROUP', 'RECTANGLE'].includes(selectedNodes[0].type)) {
+    if (selectedNodes.length === 1 && ['FRAME', 'COMPONENT', 'INSTANCE', 'GROUP', 'RECTANGLE', 'SECTION'].includes(selectedNodes[0].type)) {
         const frame = selectedNodes[0];
 
         let exportedFrame = await frame.exportAsync({
