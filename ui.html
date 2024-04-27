@@ -46,7 +46,7 @@
                 <!-- Scrollable content -->
                 <div class="h-full overflow-auto pb-2">
                     <!-- Setup OpenAI alert -->
-                    <div v-if="!isOpenAIInstalled" class="rounded bg-gray-100 p-3.5 space-y-3 flex-1 text-center">
+                    <div v-if="!settingsPage.isOpenAIInstalled" class="rounded bg-gray-100 p-3.5 space-y-3 flex-1 text-center">
                         <b class="text-xs block">
                             Please set up your OpenAI Key
                         </b>
@@ -56,14 +56,22 @@
                                 class="underline">here in your OpenAI
                                 account</a>.
                         </p>
-                        <button @click.native="goToSettingsPage" type="button"
+						<div>
+							<input @keyup.enter="storeOpenAIToken(tokenSetup.input)" v-model="tokenSetup.input" type="password" name="email"
+								   class="block w-full rounded text-xs py-1.5 px-2 text-gray-700 cursor-default border border-gray-300 placeholder:text-gray-400 focus:ring-2 ring-inset focus:ring-sky-500 focus:border-sky-500 outline-none"
+								   placeholder="Paste your API token here" />
+							<small v-if="tokenSetup.isVisible" class="text-xs text-red-600 pt-1 block">
+								{{ tokenSetup.message}}
+							</small>
+						</div>
+                        <button @click.native="storeOpenAIToken(tokenSetup.input)" type="button"
                             class="rounded-md bg-sky-500 px-3 py-1.5 text-xs text-white">
-                            Set Up OpenAI API
+                            Submit Your Key
                         </button>
                     </div>
 
                     <!-- Image Selection Container -->
-                    <div v-if="isOpenAIInstalled"
+                    <div v-if="settingsPage.isOpenAIInstalled"
                         class="mb-5 w-full h-48 border border-gray-200 rounded flex items-center justify-center p-2"
                         :class="{'border-sky-400 ring-2 ring-sky-200 ring-inset': userStoriesPage.imageResource}">
                         <img v-show="userStoriesPage.imageResource" :src="userStoriesPage.imageResource"
@@ -135,24 +143,32 @@
 
                 <div class="h-full overflow-auto pb-2">
                     <!-- Setup OpenAI alert -->
-                    <div v-if="!isOpenAIInstalled" class="rounded bg-gray-100 p-3.5 space-y-3 flex-1 text-center">
+                    <div v-if="!settingsPage.isOpenAIInstalled" class="rounded bg-gray-100 p-3.5 space-y-3 flex-1 text-center">
                         <b class="text-xs block">
                             Please set up your OpenAI Key
                         </b>
                         <p class="text-xs">
                             If you don't have your OpenAI API key, you can get your key <a
-                                href="https://platform.openai.com/account/api-keys" target="_blank"
-                                class="underline">here in your OpenAI
+								href="https://platform.openai.com/account/api-keys" target="_blank"
+								class="underline">here in your OpenAI
                                 account</a>.
                         </p>
-                        <button @click.native="goToSettingsPage" type="button"
-                            class="rounded-md bg-sky-500 px-3 py-1.5 text-xs text-white">
-                            Set Up OpenAI API
+						<div>
+							<input @keyup.enter="storeOpenAIToken(tokenSetup.input)" v-model="tokenSetup.input" type="password" name="email"
+								   class="block w-full rounded text-xs py-1.5 px-2 text-gray-700 cursor-default border border-gray-300 placeholder:text-gray-400 focus:ring-2 ring-inset focus:ring-sky-500 focus:border-sky-500 outline-none"
+								   placeholder="Paste your API token here" />
+							<small v-if="tokenSetup.isVisible" class="text-xs text-red-600 pt-1 block">
+								{{ tokenSetup.message}}
+							</small>
+						</div>
+                        <button @click.native="storeOpenAIToken(tokenSetup.input)" type="button"
+								class="rounded-md bg-sky-500 px-3 py-1.5 text-xs text-white">
+                            Submit Your Key
                         </button>
                     </div>
 
                     <!-- Image Selection Container -->
-                    <div v-if="isOpenAIInstalled"
+                    <div v-if="settingsPage.isOpenAIInstalled"
                         class="mb-5 w-full h-48 border border-gray-200 rounded flex items-center justify-center p-2"
                         :class="{'border-sky-400 ring-2 ring-sky-200 ring-inset': chatWithDesignPage.imageResource}">
                         <img v-show="chatWithDesignPage.imageResource" :src="chatWithDesignPage.imageResource"
@@ -255,10 +271,12 @@
                     OpenAI API Token
                 </label>
                 <div class="w-52">
-                    <input @input="storeOpenAIToken" v-model="settingsPage.openAIToken" type="password" name="email"
-                        id="email"
+                    <input @input="storeOpenAIToken(settingsPage.openAIToken)" v-model="settingsPage.openAIToken" type="password"
                         class="block w-full rounded text-xs py-1.5 px-2 text-gray-700 cursor-default border border-gray-300 placeholder:text-gray-400 focus:ring-2 ring-inset focus:ring-sky-500 focus:border-sky-500 outline-none"
                         placeholder="Paste your API token here" />
+					<small v-if="tokenSetup.isVisible" class="text-xs text-red-600 pt-1 block">
+						{{ tokenSetup.message}}
+					</small>
                 </div>
             </div>
             <div v-if="false" class="mb-6">
@@ -299,16 +317,9 @@
         let receivedChunks = [];
 
         const app = Vue.createApp({
-            computed: {
-                isOpenAIInstalled() {
-                    const regex = /^[a-zA-Z0-9]{2}-[a-zA-Z0-9]{48}$/;
-
-                    return regex.test(this.settingsPage.openAIToken)
-                }
-            },
             data() {
                 return {
-                    version: "v1.0.0-beta",
+                    version: "v1.0.2",
                     userAvatar: undefined,
                     activeTab: 'userStories',
                     tabs: [
@@ -373,11 +384,17 @@
                     },
                     settingsPage: {
                         openAIToken: undefined,
+						isOpenAIInstalled: false,
                     },
                     linearSetup: {
                         token: '',
                         url: 'https://api.linear.app/graphql',
-                    }
+                    },
+					tokenSetup: {
+						input: undefined,
+						isVisible: false,
+						message: 'You probably pasted the wrong token',
+					}
                 }
             },
             methods: {
@@ -513,6 +530,14 @@
                             signal,
                         });
 
+                        if (!response.ok) {
+                            // Stop generation
+                            this.userStoriesPage.isGenerating = false
+
+                            // Log the error and set the error message
+                            this.userStoriesPage.errorMessage = response.status
+                        }
+
                         // Read the response as a stream of data
                         const reader = response.body.getReader();
                         const decoder = new TextDecoder("utf-8");
@@ -561,7 +586,6 @@
                         this.userStoriesPage.isGenerating = false
 
                         // Log the error and set the error message
-                        console.log(error)
                         this.userStoriesPage.errorMessage = error.message
 
                     } finally {
@@ -650,6 +674,14 @@
                             signal,
                         });
 
+                        if (!response.ok) {
+                            // Stop generation
+                            this.chatWithDesignPage.isGenerating = false
+
+                            // Log the error and set the error message
+                            this.chatWithDesignPage.errorMessage = response.status
+                        }
+
                         // Read the response as a stream of data
                         const reader = response.body.getReader();
                         const decoder = new TextDecoder("utf-8");
@@ -723,6 +755,11 @@
                     this.userStoriesPage.query = undefined
                     this.userStoriesPage.errorMessage = undefined
                 },
+				isValidOpenAIToken(token) {
+					const regex = /^sk-(proj-)?[a-zA-Z0-9]{22,}$/;
+
+					return regex.test(token)
+				},
                 handleMessage(event) {
 
                     // Convert image and store the source
@@ -764,20 +801,34 @@
 
                     // Set OpenAI token
                     if (event.data.pluginMessage.type === 'get-openai-token') {
-                        this.settingsPage.openAIToken = event.data.pluginMessage.openAIToken
+						let token = event.data.pluginMessage.openAIToken
+
+						this.settingsPage.isOpenAIInstalled = this.isValidOpenAIToken(token)
+                        this.settingsPage.openAIToken = token
                     }
                 },
-                storeOpenAIToken() {
-                    parent.postMessage({
-                        pluginMessage: {
-                            type: 'set-openai-token',
-                            data: this.settingsPage.openAIToken
-                        }
-                    }, '*')
+                storeOpenAIToken(token) {
+					if (token === '') {
+						this.settingsPage.isOpenAIInstalled = false
+					} else if (this.isValidOpenAIToken(token)) {
+						this.settingsPage.isOpenAIInstalled = true
+						this.settingsPage.openAIToken = token
+						this.tokenSetup.isVisible = false
+
+						parent.postMessage({
+							pluginMessage: {
+								type: 'set-openai-token',
+								data: token
+							}
+						}, '*')
+					} else {
+						this.tokenSetup.isVisible = true
+					}
                 }
             },
             async mounted() {
                 window.addEventListener('message', this.handleMessage);
+
             },
         })
 
